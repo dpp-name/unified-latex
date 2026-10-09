@@ -206,4 +206,115 @@ describe("unified-latex-util-parse", () => {
             ],
         });
     });
+
+    it("Parses url, nolinkurl, hyperbaseurl, and href macros with raw url arguments", () => {
+        // \url{an%3A0}
+        const urlStr = "\\url{an%3A0}";
+        const parsedUrl = parse(urlStr);
+        expect(trimRenderInfo(parsedUrl)).toEqual({
+            type: "root",
+            content: [m("url", [arg("an%3A0")])],
+        });
+        expect(printRaw(parsedUrl)).toEqual(urlStr);
+
+        // \nolinkurl{an%3A0}
+        const nolinkurlStr = "\\nolinkurl{an%3A0}";
+        const parsedNolinkurl = parse(nolinkurlStr);
+        expect(trimRenderInfo(parsedNolinkurl)).toEqual({
+            type: "root",
+            content: [m("nolinkurl", [arg("an%3A0")])],
+        });
+        expect(printRaw(parsedNolinkurl)).toEqual(nolinkurlStr);
+
+        // \hyperbaseurl{http://example.com/a%20b/}
+        const hyperbaseurlStr = "\\hyperbaseurl{http://example.com/a%20b/}";
+        const parsedHyperbaseurl = parse(hyperbaseurlStr);
+        expect(trimRenderInfo(parsedHyperbaseurl)).toEqual({
+            type: "root",
+            content: [m("hyperbaseurl", [arg("http://example.com/a%20b/")])],
+        });
+        expect(printRaw(parsedHyperbaseurl)).toEqual(hyperbaseurlStr);
+
+        // \href{https://zbmath.org/?q=an%3A0122.40102}{https://zbmath.org/?q=an\%3A0122.40102}
+        const hrefStr =
+            "\\href{https://zbmath.org/?q=an%3A0122.40102}{https://zbmath.org/?q=an\\%3A0122.40102}";
+        const parsedHref = parse(hrefStr);
+        expect(trimRenderInfo(parsedHref)).toEqual({
+            type: "root",
+            content: [
+                m("href", [
+                    arg(null),
+                    arg("https://zbmath.org/?q=an%3A0122.40102"),
+                    arg([
+                        s("https"),
+                        s(":"),
+                        s("/"),
+                        s("/"),
+                        s("zbmath"),
+                        s("."),
+                        s("org"),
+                        s("/"),
+                        s("?"),
+                        s("q"),
+                        s("="),
+                        s("an"),
+                        m("%"),
+                        s("3A0122"),
+                        s(".40102"),
+                    ]),
+                ]),
+            ],
+        });
+        expect(printRaw(parsedHref)).toEqual(hrefStr);
+
+        // \href[page=1]{raw-url}{normal-text}
+        const hrefWithOptStr =
+            "\\href[page=1]{https://example.com/test?a=1&b=2}{Click \\emph{here}}";
+        const parsedHrefWithOpt = parse(hrefWithOptStr);
+        expect(trimRenderInfo(parsedHrefWithOpt)).toEqual({
+            type: "root",
+            content: [
+                m("href", [
+                    arg([s("page"), s("="), s("1")], { braces: "[]" }),
+                    arg("https://example.com/test?a=1&b=2"),
+                    arg([s("Click"), SP, m("emph", [arg("here")])]),
+                ]),
+            ],
+        });
+        expect(printRaw(parsedHrefWithOpt)).toEqual(hrefWithOptStr);
+
+        // Nested braces inside URL
+        const nestedUrlStr = "\\url{https://example.com/{id}/view}";
+        const parsedNested = parse(nestedUrlStr);
+        expect(trimRenderInfo(parsedNested)).toEqual({
+            type: "root",
+            content: [m("url", [arg("https://example.com/{id}/view")])],
+        });
+        expect(printRaw(parsedNested)).toEqual(nestedUrlStr);
+
+        // Special characters in URL: #, _, ^, &, $, ~
+        const specialUrlStr = "\\url{https://example.com/~user/a_b#frag&x=1^2$3}";
+        const parsedSpecial = parse(specialUrlStr);
+        expect(trimRenderInfo(parsedSpecial)).toEqual({
+            type: "root",
+            content: [
+                m("url", [arg("https://example.com/~user/a_b#frag&x=1^2$3")]),
+            ],
+        });
+        expect(printRaw(parsedSpecial)).toEqual(specialUrlStr);
+
+        // \url inside inline math mode does not treat _ as subscript or % as comment
+        const mathUrlStr = "$\\url{a%b_c}$";
+        const parsedMath = parse(mathUrlStr);
+        expect(trimRenderInfo(parsedMath)).toEqual({
+            type: "root",
+            content: [
+                {
+                    type: "inlinemath",
+                    content: [m("url", [arg("a%b_c")])],
+                },
+            ],
+        });
+        expect(printRaw(parsedMath)).toEqual(mathUrlStr);
+    });
 });

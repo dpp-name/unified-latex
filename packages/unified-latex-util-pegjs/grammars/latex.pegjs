@@ -125,6 +125,9 @@ special_macro "special macro" // for the special macros like \[ \] and \begin{} 
     / verbatim_listings
     // verbatim macro in minted package
     / verbatim_minted
+    // url and href macros
+    / url_macro
+    / href_macro
     // verbatim environment
     / verbatim_minted_environment
     / verbatim_environment_with_optional_arg
@@ -217,6 +220,93 @@ verbatim_minted "verbatim minted"
                 ...[].concat(verbatim),
             ];
         }
+
+url_macro "url macro"
+    = escape
+        macro:("url" / "nolinkurl" / "hyperbaseurl")
+        !char
+        sp_nl*
+        arg:raw_url_group {
+            return createNode("macro", {
+                content: macro,
+                args: [arg],
+            });
+        }
+
+href_macro "href macro"
+    = escape
+        macro:"href"
+        !char
+        sp_nl*
+        opt:optional_arg?
+        sp_nl*
+        url:raw_url_group
+        sp_nl*
+        text:normal_arg {
+            const args = [
+                opt || {
+                    type: "argument",
+                    openMark: "",
+                    closeMark: "",
+                    content: [],
+                },
+                url,
+                text,
+            ];
+            return createNode("macro", {
+                content: macro,
+                args,
+            });
+        }
+
+raw_url_group "raw url group"
+    = begin_group chars:raw_url_group_char* end_group {
+        return createNode("argument", {
+            openMark: "{",
+            closeMark: "}",
+            content: [createNode("string", { content: chars.join("") })],
+        });
+    }
+
+raw_url_group_char
+    = begin_group c:raw_url_group_char* end_group {
+        return "{" + c.join("") + "}";
+    }
+    / !end_group x:. {
+        return x;
+    }
+
+optional_arg "optional argument"
+    = "["
+        o:(
+            !(
+                    end:token
+                        & {
+                                return (
+                                    end.type === "string" && end.content === "]"
+                                );
+                            }
+                )
+                x:token { return x; }
+        )*
+        "]" {
+            return createNode("argument", {
+                openMark: "[",
+                closeMark: "]",
+                content: o.flatMap((x) => x),
+            });
+        }
+
+normal_arg "normal argument"
+    = g:group {
+        return createNode("argument", {
+            openMark: "{",
+            closeMark: "}",
+            content: g.content,
+        });
+    }
+
+sp_nl = sp / nl
 
 verbatim_minted_environment "verbatim minted environment"
     = begin_env

@@ -188,6 +188,25 @@ c
         }
     });
 
+    it("url and href tests", async () => {
+        const STRINGS = [
+            { inStr: "\\url{an%3A0}", outStr: "\\url{an%3A0}" },
+            { inStr: "\\nolinkurl{an%3A0}", outStr: "\\nolinkurl{an%3A0}" },
+            {
+                inStr: "\\href{https://zbmath.org/?q=an%3A0122.40102}{https://zbmath.org/?q=an\\%3A0122.40102}",
+                outStr: "\\href{https://zbmath.org/?q=an%3A0122.40102}{https://zbmath.org/?q=an\\%3A0122.40102}",
+            },
+            {
+                inStr: "\\href[page=1]{https://example.com/test?a=1&b=2}{Click \\emph{here}}",
+                outStr: "\\href[page=1]{https://example.com/test?a=1&b=2}{Click\n\\emph{here}}",
+            },
+        ];
+
+        for (const { inStr, outStr } of STRINGS) {
+            await expect(inStr).toFormatAs(outStr, formatter);
+        }
+    });
+
     it("verbatim environments tests", async () => {
         const STRINGS = [
             {

@@ -362,6 +362,7 @@ export const environments: EnvInfoRecord = {
     list: { signature: "m m", processContent: cleanEnumerateBody },
     figure: { signature: "o" },
     "figure*": { signature: "o" },
+    subfigure: { signature: "o m" },
     filecontents: { signature: "o m" },
     "filecontents*": { signature: "o m" },
     minipage: { signature: "o o o m" },
